@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-
+from time import time_ns
 from time import sleep
 import argparse
 from gpiozero import PhaseEnableMotor
@@ -7,39 +7,6 @@ from gpiozero import DigitalInputDevice
 
 TICK_DISTANCE_MM = 0.1636246 #millimeters per tick of encoder(using 1 wire, 32 CPR)
 TICK_DISTANCE_INCHES = TICK_DISTANCE_MM * 0.0393701 # inches per tick
-
-class encoders(self,enc,motor):
-    def __init__:
-        self.enc = enc #saving reference to encoder obj
-        self.motor = motor # saving reference to motor obj
-        self.first_tick = True
-        self.prev_tick = 0
-        self.enc_value_read = 0
-        self.total_ticks = 0
-        
-    def encoder_read(self):
-        if self.first_tick == True: # first iteration
-            self.first_tick = False 
-            self.prev_tick = self.enc.value # reads GPIO pin
-            if self.motor.value > 0: # makes sure motor is moving forward
-                self.total_ticks =  self.total_ticks + 1 # adds 1 to start always because there is no prev tick yet
-            else:
-                print("Motor not moving")
-                return() # motors arent moving, dont do anything    
-        else: # every iteration after first
-            self.enc_value_read = self.enc.value # reads GPIO pin 7 for rotary encoder level
-            if self.enc_value_read != self.prev_tick: # if the prev level and current are different(meaning it changed)
-                if self.motor.value > 0:
-                    self.total_ticks = self.total_ticks + 1 # increment ticks(forward)
-                elif self.motor.value < 0:
-                    self.total_ticks = self.total_ticks - 1 # increment ticks(forward)
-                else:
-                    print("Motor not moving")
-                    return() # motors arent moving, dont do anything
-            self.prev_tick = self.enc_value_read # last value = current value  
-
-    def encoder_total_ticks(self)
-        return(self.total_ticks)
 
 if __name__ == "__main__":
 
@@ -69,7 +36,7 @@ if __name__ == "__main__":
 
     args=parser.parse_args()
     distance = args.distance
-    direction = args.direction
+    #direction = args.direction
     speed = args.speed
 
     ticks_to_travel = (distance*12) / TICK_DISTANCE_INCHES
@@ -77,12 +44,16 @@ if __name__ == "__main__":
     print("Going to move ",ticks_to_travel,"ticks at ",speed," speed. Starting in 5 seconds")
     sleep(5)
 
-    #if direction == 1:
     motor.forward(speed)
-    #elif direction == 0:
-    #    motor.backward(speed)
+    start_loop = 0
+    end_loop = 0
+    loop_time=0
+    total_loop_time = 0
+    loops=0
 
-    while ticks_to_travel > ticks_traveled:
+    #while ticks_to_travel > ticks_traveled:
+    while ticks_traveled < 100000:
+        start_loop = time_ns()/1000
         if first_tick == True: # first iteration
                     first_tick = False 
                     prev_tick_1 = rot_enc1.value # reads GPIO pin 7
@@ -111,6 +82,14 @@ if __name__ == "__main__":
             motor.stop()
             break
 
+        end_loop = time_ns()/1000
+        loop_time = end_loop-start_loop
+        #print("Time for 1 loop is: ",loop_time)
+        total_loop_time = total_loop_time + loop_time
+        loops = loops + 1
+
+    avg_loop_time = total_loop_time / loops
+    print("average loop time: ",avg_loop_time)
     if detected_leak is True:
         print("out of loop, because we detected leak!")
     else:
