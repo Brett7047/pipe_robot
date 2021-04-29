@@ -87,9 +87,22 @@ if __name__ == "__main__":
             detected_leak = True
             print("DETECTED LEAK")
             motor.stop()
+            """
+            ******************************************************
+            ******************************************************
+            DO CAMERA STUFF, RECORD LOCATIONs, TRANSMIT STUFF HERE
+            ******************************************************
+            ******************************************************
+            """
+            # TODO - After leak detection, code in logic to make sure it doesnt instantly 
+            # throw another ddetection when it begins driving to the end of the pipe. AKA
+            # make sure the next X ticks dont throw a sensor. Probably hard code a specified
+            # distance in ticks to drive to release the membrane from the vaccum, then begin
+            # sensing again OR just stop sensing after a single detection(cheatsies)
             break
 
     # Go back to start if -b specified on cmd line
+    # Does not do any leak detecting when returning to start.
     if args.goback == True:
         print("Returning to start!")
         motor.backward(speed)
