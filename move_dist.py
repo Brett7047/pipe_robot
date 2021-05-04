@@ -4,8 +4,8 @@ import argparse
 from gpiozero import PhaseEnableMotor
 from gpiozero import DigitalInputDevice
 
-TICK_DISTANCE_MM = 0.1636246 #millimeters per tick of encoder(using 1 wire, 32 CPR)
-TICK_DISTANCE_INCHES = TICK_DISTANCE_MM * 0.0393701 # inches per tick
+TICKS_PER_MM = 0.1636246 #millimeters per tick of encoder(using 1 wire, 32 CPR)
+TICK_PER_INCH = TICKS_PER_MM * 0.0393701 # inches per tick
 
 class encoders():
     def __init__(self,enc,motor):
@@ -56,9 +56,6 @@ if __name__ == "__main__":
     enc_1 = encoders(rotary_encoder1,motor) # initializes class
     enc_2 = encoders(rotary_encoder2,motor) # initializes class
 
-    detected_leak = False
-    ticks_traveled = 0
-
     # argument parser for command line inputs
     parser = argparse.ArgumentParser(description="Drive a specified distance")
     parser.add_argument("distance", help="Enter a distance(in feet)",type=float)
@@ -69,9 +66,13 @@ if __name__ == "__main__":
     distance = args.distance
     speed = args.speed
 
+    # variables used in while loop
+    detected_leak = False
+    ticks_traveled = 0
+    leak_detected_ticks = 0
 
-    ticks_to_travel = (distance*12) / TICK_DISTANCE_INCHES
-    print("Total ticks needed to travel: ",distance," feet is: ",ticks_to_travel)
+    ticks_to_travel = (distance*12) / TICK_PER_INCH
+    print("Distance to travel: ",distance," feet. Ticks to travel: ",ticks_to_travel," ticks.")
     print("Going to move ",ticks_to_travel,"ticks at ",speed," speed. Starting in 5 seconds")
     sleep(5)
 
@@ -83,8 +84,9 @@ if __name__ == "__main__":
         enc_2.encoder_run()
         ticks_traveled = ((enc_1.encoder_total_ticks() + enc_2.encoder_total_ticks()) / 2) # avg of ticks
 
-        if sensor_1.value == 1 or sensor_2.value == 1 or sensor_3.value == 1:
+        if (sensor_1.value == 1 or sensor_2.value == 1 or sensor_3.value == 1) and detected_leak == False:
             detected_leak = True
+            leak_detected_ticks = ticks_traveled
             print("DETECTED LEAK")
             motor.stop()
             """
@@ -99,13 +101,16 @@ if __name__ == "__main__":
             # make sure the next X ticks dont throw a sensor. Probably hard code a specified
             # distance in ticks to drive to release the membrane from the vaccum, then begin
             # sensing again OR just stop sensing after a single detection(cheatsies)
-            break
+            sleep(2)
+            motor.forward(speed)
 
     # Go back to start if -b specified on cmd line
     # Does not do any leak detecting when returning to start.
     if args.goback == True:
+        motor.stop()
+        sleep(2)
         print("Returning to start!")
-        motor.backward(speed)
+        motor.backward(0.1)
         while ticks_traveled > 0:
             enc_1.encoder_run()
             enc_2.encoder_run()
@@ -114,6 +119,6 @@ if __name__ == "__main__":
 
 
     if detected_leak is True:
-        print("out of loop, because we detected leak!")
+        print("Detected leak at: ", (leak_detected_ticks * TICK_PER_INCH)," inches.")
     else:
         print("done!")    
