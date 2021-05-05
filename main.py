@@ -3,6 +3,7 @@ from time import sleep
 import argparse
 from gpiozero import PhaseEnableMotor
 from gpiozero import DigitalInputDevice
+import gps_test
 
 TICKS_PER_MM = 0.1636246 #millimeters per tick of encoder(using 1 wire, 32 CPR)
 TICK_PER_INCH = TICKS_PER_MM * 0.0393701 # inches per tick
