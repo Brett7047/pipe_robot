@@ -18,4 +18,4 @@ while True:
     print("Sensor 1: ",sensor_1.is_active)
     print("Sensor 2: ",sensor_2.is_active)
     print("Sensor 3: ",sensor_3.is_active)
-    sleep(0.01)
+    sleep(0.05)
