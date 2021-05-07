@@ -1,4 +1,8 @@
 #! /usr/bin/env python3
+# Date Created : Spring 2021
+# Author : Brett Ryan, James Lechak ryanbm@sunypoly.edu, lechakj@sunypoly.edu
+# Language: Python3.7.3
+
 import time
 from time import sleep
 import argparse
@@ -73,7 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("-nd","--nodetect",help="Tells the robot to ignore sensor readings and just drive",
                         action="store_true")
     args=parser.parse_args()
-    
+
     distance = args.distance
     speed = args.speed
     if (args.bearing > 360) or (args.bearing < 0):
@@ -143,9 +147,9 @@ if __name__ == "__main__":
             pass
 
 
-
-    # Go back to start if -b specified on cmd line
-    # Does not do any leak detecting when returning to start.
+    # Returns to start. Decrements counted ticks until it hits 0 so that it
+    # returns to starting location exactly. Does not do any force sensing when
+    # returning to start.
     if args.goback == True:
         speed = args.speed
         slow_down_1 = False
@@ -174,3 +178,6 @@ if __name__ == "__main__":
     if detected_leak is True:
         print("Detected leak at: ", (leak_detected_ticks * INCH_PER_TICK)," inches.")
     
+
+    # input gps map data to https://www.gpsvisualizer.com/map_input
+

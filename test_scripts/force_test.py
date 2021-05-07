@@ -1,4 +1,7 @@
 #! /usr/bin/env python3
+# Date Created : Spring 2021
+# Author : Brett Ryan, ryanbm@sunypoly.edu
+# Language: Python3.7.3
 from time import sleep
 import argparse
 from gpiozero import PhaseEnableMotor

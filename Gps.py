@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
-
+# Date Created : Spring 2021
+# Author : Brett Ryan, ryanbm@sunypoly.edu
+# Language: Python3.7.3
 import serial
 import pynmea2
 import math
@@ -86,6 +88,7 @@ class GPS:
             pass
 
 if __name__ == "__main__":
+    # for testing this script. The script itself is mainly used in main.py
     gps = GPS()
     gps.get_initial_point()
     gps.compute_latlon(0,6000)
