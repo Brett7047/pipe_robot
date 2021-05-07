@@ -3,7 +3,6 @@
 # Author : Brett Ryan, James Lechak ryanbm@sunypoly.edu, lechakj@sunypoly.edu
 # Language: Python3.7.3
 
-import time
 from time import sleep
 import argparse
 import os
@@ -15,6 +14,7 @@ import gps # class file for gps
 
 MM_PER_TICK = 0.1636246 #millimeters per tick of encoder(using 1 wire, 32 CPR)
 INCH_PER_TICK = MM_PER_TICK * 0.0393701 # inches per tick
+ROBOT_LENGTH_IN_TICKS = (16/INCH_PER_TICK) # length of robot from camera to center of gyro membrane
 
 class encoders():
     def __init__(self,enc,motor):
@@ -94,6 +94,11 @@ if __name__ == "__main__":
     leak_detected_ticks = 0 # ticks at detected leak
     gps_capture_increment = 1000 # tick intervals to record gps point(s)
 
+    # these 2 OS calls manipulate the image captured. Downsizing it, then converting to .wav
+    # they are called in the leak detected section.
+    osCall1 = "convert leak.jpg -resize 320x240\! leak_resize.jpg" 
+    osCall2 = "pysstv --mode Robot36 /home/pi/seniordesign/leak_resize.jpg /home/pi/seniordesign/leak.wav" 
+
     ticks_to_travel = (distance*12) / INCH_PER_TICK
     gps.get_initial_point() # hangs until initial point is acquired
     print("Distance to travel: ",distance," feet. Ticks to travel: ",ticks_to_travel," ticks.")
@@ -103,11 +108,11 @@ if __name__ == "__main__":
     motor.forward(speed) # begins the motor moving forward
     # MAIN LOOP 
     while ticks_to_travel > ticks_traveled:
+
         # encoder work
         enc_1.encoder_run() # encoder 1 function. Call as fast as possible for highest accuracy
         enc_2.encoder_run() # encoder 2 function. Call as fast as possible for highest accuracy
         ticks_traveled = ((enc_1.encoder_total_ticks() + enc_2.encoder_total_ticks()) / 2) # avg of ticks
-
         # incremental GPS captures
         if ticks_traveled > gps_capture_increment: # grabs GPS coordinate every 1000 ticks
             print("computing gps point at: ",(ticks_traveled*MM_PER_TICK),"mm")
@@ -117,23 +122,37 @@ if __name__ == "__main__":
         # detected leak
         if ((sensor_1.value == 1 or sensor_2.value == 1 or sensor_3.value == 1) and
         detected_leak == False and args.nodetect == False):
-            ''' DO ALL LEAK DETECTED STUFF HERE '''
+            print("DETECTED LEAK")
+            osCall1 = "convert leak.jpg -resize 320x240\! leak_resize.jpg"
             detected_leak = True # prevents robot from detecting another leak after this. 
             motor.stop()
-            print("DETECTED LEAK")
+            sleep(2)
+            # the robot now needs to go back exactly 16 inches because the gryo assembly sits in the rear of the robot, and
+            # the camera is in the front. This makes the robot reverse 16 inches so the camera can capture an image of the leak
+            ticks_to_reverse_to = ticks_traveled- ROBOT_LENGTH_IN_TICKS
+            print("Backing up to leak for camera to be centered on leak")
+            motor.backward(0.1)
+            while ticks_traveled > ticks_to_reverse_to:
+                enc_1.encoder_run() # encoder 1 function. Call as fast as possible for highest accuracy
+                enc_2.encoder_run() # encoder 2 function. Call as fast as possible for highest accuracy
+                ticks_traveled = ((enc_1.encoder_total_ticks() + enc_2.encoder_total_ticks()) / 2) # avg of ticks
+            motor.stop()
+
             # Gps work
             leak_detected_ticks = ticks_traveled # records point of detected leak
             gps.compute_latlon(bearing,(leak_detected_ticks*MM_PER_TICK),leak=True) # records gps point at leak.
             #Camera Work
             camera.capture("leak.jpg")
             print("Capturing image, resizing and converting to .wav!")
-            osCall1 = "convert leak.jpg -resize 320x240\! leak_resize.jpg"
             os.system(osCall1) # resizes image to usable format with pysstv
-            osCall2 = "pysstv --mode Robot36 /home/pi/seniordesign/leak_resize.jpg /home/pi/seniordesign/leak.wav"
             os.system(osCall2) # converts resized image to .wav file
             # here is where we would have sent data over radio had we gotten that working.
             sleep(2)
             motor.forward(speed)
+
+
+        # this section slows down the robot when it nears the end of its specified distance.
+        # its mainly here to prevent really hard stops and possible slippage when at high speeds
         if ticks_to_travel - ticks_traveled < 2000 and slow_down_1 is False and speed > 0.5:
             speed = 0.5
             motor.forward(speed)
